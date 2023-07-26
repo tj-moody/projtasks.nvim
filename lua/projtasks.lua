@@ -10,10 +10,16 @@ M.setup = function(args)
     if not ok then return end
 
     local conf = args or default_conf
+
+    -- if conf.direction == "vertical" then
+    --     width = 20
+    -- end
+
     local term = Terminal:new({
         hidden = true,
         dir = "git_dir",
         direction = conf.direction,
+        width = 30,
 
         on_open = function(term)
             vim.cmd("startinsert!")
