@@ -1,61 +1,73 @@
-local Terminal = require('toggleterm.terminal').Terminal
 local M = {}
 
 local default_conf = {
     direction = "float",
 }
 
+local new_vert_term = function()
+    local buf = vim.api.nvim_create_buf(false, false) + 1
+    vim.cmd("terminal")
+    vim.cmd("setlocal nonumber norelativenumber nobuflisted")
+    vim.api.nvim_buf_set_keymap(
+        buf,
+        "n", "q", "<cmd>close<CR>",
+        { noremap = true, silent = true }
+    )
+    vim.api.nvim_buf_set_keymap(
+        buf,
+        "t", "<C-T>", "<cmd>close<CR>",
+        { noremap = true, silent = true }
+    )
+    vim.api.nvim_buf_set_keymap(
+        buf,
+        "n", "<C-T>", "<cmd>close<CR>",
+        { noremap = true, silent = true }
+    )
+    vim.api.nvim_buf_set_keymap(
+        buf,
+        "n", "p", "",
+        { noremap = true, silent = true }
+    )
+    vim.cmd("bprev")
+
+    return buf
+end
+
+local is_visible = function(bufnr)
+    for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        local winbufnr = vim.api.nvim_win_get_buf(winid)
+        local winvalid = vim.api.nvim_win_is_valid(winid)
+
+        if winvalid and winbufnr == bufnr then
+            return true
+        end
+    end
+
+    return false
+end
+
 M.setup = function(args)
     ok, proj_config = pcall(require, 'projfile')
-    if not ok then return end
+    if not ok then print("PROJFILE NOT FOUND") return end
 
     local conf = args or default_conf
 
-    -- if conf.direction == "vertical" then
-    --     width = 20
-    -- end
-
-    local term = Terminal:new({
-        hidden = true,
-        dir = "git_dir",
-        direction = conf.direction,
-        -- size = function(term)
-        --     if term.direction == "horizontal" then
-        --         return 15
-        --     elseif term.direction == "vertical" then
-        --         return vim.o.columns * 0.4
-        --     end
-        -- end,
-        size = 80,
-
-        on_open = function(term)
-            vim.cmd("startinsert!")
-            vim.api.nvim_buf_set_keymap(
-                term.bufnr,
-                "n", "q", "<cmd>close<CR>",
-                { noremap = true, silent = true }
-            )
-            vim.api.nvim_buf_set_keymap(
-                term.bufnr,
-                "t", "<C-T>", "<cmd>close<CR>",
-                { noremap = true, silent = true }
-            )
-            vim.api.nvim_buf_set_keymap(
-                term.bufnr,
-                "n", "<C-T>", "<cmd>close<CR>",
-                { noremap = true, silent = true }
-            )
-        end,
-
-        -- on_close = function(term)
-        --     vim.cmd("startinsert!")
-        -- end,
-    })
+    local bufnr = new_vert_term()
+    print(bufnr)
 
     vim.api.nvim_create_user_command(
         "ProjtasksToggle",
         function()
-            term:toggle()
+            if is_visible(bufnr) then
+                vim.cmd("close " .. vim.fn.bufwinnr(bufnr))
+            else
+                vim.cmd.vsplit()
+                if not vim.api.nvim_buf_is_valid(bufnr) then
+                    bufnr = new_vert_term()
+                end
+                vim.cmd.b(bufnr)
+                vim.cmd("startinsert!")
+            end
         end,
         { desc = "Toggle Projtasks Terminal" }
     )
@@ -63,8 +75,18 @@ M.setup = function(args)
     vim.api.nvim_create_user_command(
         "ProjtasksRun",
         function()
-            term:open()
-            term:send(proj_config["tasks"]["run"], false)
+            if not is_visible(bufnr) then
+                vim.cmd.vsplit()
+                if not vim.api.nvim_buf_is_valid(bufnr) then
+                    bufnr = new_vert_term()
+                end
+                vim.cmd.b(bufnr)
+                vim.cmd("startinsert!")
+            else
+                vim.cmd("ProjtasksToggle")
+                vim.cmd("ProjtasksToggle")
+            end
+            vim.api.nvim_feedkeys(proj_config["tasks"]["run"], 't', false)
         end,
         { desc = "Run Project" }
     )
@@ -72,8 +94,18 @@ M.setup = function(args)
     vim.api.nvim_create_user_command(
         "ProjtasksTest",
         function()
-            term:open()
-            term:send(proj_config["tasks"]["test"], false)
+            if not is_visible(bufnr) then
+                vim.cmd.vsplit()
+                if not vim.api.nvim_buf_is_valid(bufnr) then
+                    bufnr = new_vert_term()
+                end
+                vim.cmd.b(bufnr)
+                vim.cmd("startinsert!")
+            else
+                vim.cmd("ProjtasksToggle")
+                vim.cmd("ProjtasksToggle")
+            end
+            vim.api.nvim_feedkeys(proj_config["tasks"]["test"], 't', false)
         end,
         { desc = "Test Project" }
     )
@@ -84,5 +116,7 @@ end
 -- TODO: Add defaults based on project type and
 --       structure, ie `cargo run`, `cargo test`,
 --       etc. by default in Rust projects.
+-- TODO: Output to file instead
+--       of terminal window?
 
 return M
