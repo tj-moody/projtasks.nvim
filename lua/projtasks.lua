@@ -19,13 +19,14 @@ M.setup = function(args)
         hidden = true,
         dir = "git_dir",
         direction = conf.direction,
-        size = function(term)
-            if term.direction == "horizontal" then
-                return 15
-            elseif term.direction == "vertical" then
-                return vim.o.columns * 0.4
-            end
-        end,
+        -- size = function(term)
+        --     if term.direction == "horizontal" then
+        --         return 15
+        --     elseif term.direction == "vertical" then
+        --         return vim.o.columns * 0.4
+        --     end
+        -- end,
+        size = 80,
 
         on_open = function(term)
             vim.cmd("startinsert!")
