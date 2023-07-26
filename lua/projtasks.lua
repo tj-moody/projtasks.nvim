@@ -1,9 +1,5 @@
 local M = {}
 
-local default_conf = {
-    direction = "float",
-}
-
 local new_vert_term = function()
     local buf = vim.api.nvim_create_buf(false, false) + 1
     vim.cmd("terminal")
@@ -46,14 +42,9 @@ local is_visible = function(bufnr)
     return false
 end
 
-M.setup = function(args)
+M.setup = function()
     ok, proj_config = pcall(require, 'projfile')
     if not ok then print("PROJFILE NOT FOUND") return end
-
-    local conf = args or default_conf
-
-    local bufnr = new_vert_term()
-    print(bufnr)
 
     vim.api.nvim_create_user_command(
         "ProjtasksToggle",
