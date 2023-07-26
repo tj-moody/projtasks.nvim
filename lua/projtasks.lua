@@ -95,7 +95,7 @@ M.setup = function()
                 vim.cmd("ProjtasksToggle")
                 vim.cmd("ProjtasksToggle")
             end
-            vim.api.nvim_feedkeys(proj_config["tasks"]["run"] .. enter_code, 't', false)
+            vim.api.nvim_feedkeys(proj_config["tasks"]["run"] .. enter_code, 't', true)
         end,
         { desc = "Run Project" }
     )
@@ -118,7 +118,7 @@ M.setup = function()
                 vim.cmd("ProjtasksToggle")
                 vim.cmd("ProjtasksToggle")
             end
-            vim.api.nvim_feedkeys(proj_config["tasks"]["test"] .. enter_code, 't', false)
+            vim.api.nvim_feedkeys(proj_config["tasks"]["test"] .. enter_code, 't', true)
         end,
         { desc = "Test Project" }
     )
