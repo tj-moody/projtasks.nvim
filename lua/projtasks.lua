@@ -29,6 +29,12 @@ local new_vert_term = function()
     return buf
 end
 
+local enter_code = vim.api.nvim_replace_termcodes(
+    "<CR>",
+    false, false, true
+)
+
+
 local is_visible = function(bufnr)
     for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
         local winbufnr = vim.api.nvim_win_get_buf(winid)
@@ -44,7 +50,10 @@ end
 
 M.setup = function()
     ok, proj_config = pcall(require, 'projfile')
-    if not ok then print("PROJFILE NOT FOUND") return end
+    if not ok then
+        print("PROJFILE NOT FOUND")
+        return
+    end
 
     vim.api.nvim_create_user_command(
         "ProjtasksToggle",
@@ -86,7 +95,7 @@ M.setup = function()
                 vim.cmd("ProjtasksToggle")
                 vim.cmd("ProjtasksToggle")
             end
-            vim.api.nvim_feedkeys(proj_config["tasks"]["run"], 't', false)
+            vim.api.nvim_feedkeys(proj_config["tasks"]["run"] .. enter_code, 't', false)
         end,
         { desc = "Run Project" }
     )
@@ -109,7 +118,7 @@ M.setup = function()
                 vim.cmd("ProjtasksToggle")
                 vim.cmd("ProjtasksToggle")
             end
-            vim.api.nvim_feedkeys(proj_config["tasks"]["test"], 't', false)
+            vim.api.nvim_feedkeys(proj_config["tasks"]["test"] .. enter_code, 't', false)
         end,
         { desc = "Test Project" }
     )
