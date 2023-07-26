@@ -51,6 +51,7 @@ M.setup = function()
         function()
             if bufnr == nil then
                 bufnr = new_vert_term()
+                vim.cmd.vsplit()
                 vim.cmd.b(bufnr)
                 vim.cmd("startinsert!")
             elseif is_visible(bufnr) then
