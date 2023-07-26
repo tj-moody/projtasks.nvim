@@ -50,8 +50,8 @@ M.setup = function()
         "ProjtasksToggle",
         function()
             if bufnr == nil then
-                bufnr = new_vert_term()
                 vim.cmd.vsplit()
+                bufnr = new_vert_term()
                 vim.cmd.b(bufnr)
                 vim.cmd("startinsert!")
             elseif is_visible(bufnr) then
