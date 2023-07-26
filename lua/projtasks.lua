@@ -60,6 +60,7 @@ M.setup = function()
         function()
             if bufnr == nil then
                 vim.cmd.vsplit()
+                vim.cmd("vertical resize 70")
                 bufnr = new_vert_term()
                 vim.cmd.b(bufnr)
                 vim.cmd("startinsert!")
@@ -67,6 +68,7 @@ M.setup = function()
                 vim.cmd("close " .. vim.fn.bufwinnr(bufnr))
             else
                 vim.cmd.vsplit()
+                vim.cmd("vertical resize 70")
                 if not vim.api.nvim_buf_is_valid(bufnr) then
                     bufnr = new_vert_term()
                 end
@@ -86,6 +88,7 @@ M.setup = function()
             end
             if not is_visible(bufnr) then
                 vim.cmd.vsplit()
+                vim.cmd("vertical resize 70")
                 if not vim.api.nvim_buf_is_valid(bufnr) then
                     bufnr = new_vert_term()
                 end
@@ -109,6 +112,7 @@ M.setup = function()
             end
             if not is_visible(bufnr) then
                 vim.cmd.vsplit()
+                vim.cmd("vertical resize 70")
                 if not vim.api.nvim_buf_is_valid(bufnr) then
                     bufnr = new_vert_term()
                 end
