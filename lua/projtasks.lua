@@ -49,7 +49,11 @@ M.setup = function()
     vim.api.nvim_create_user_command(
         "ProjtasksToggle",
         function()
-            if is_visible(bufnr) then
+            if bufnr == nil then
+                bufnr = new_vert_term()
+                vim.cmd.b(bufnr)
+                vim.cmd("startinsert!")
+            elseif is_visible(bufnr) then
                 vim.cmd("close " .. vim.fn.bufwinnr(bufnr))
             else
                 vim.cmd.vsplit()
@@ -66,6 +70,10 @@ M.setup = function()
     vim.api.nvim_create_user_command(
         "ProjtasksRun",
         function()
+            if bufnr == nil then
+                vim.cmd("ProjtasksToggle")
+                vim.cmd("ProjtasksToggle")
+            end
             if not is_visible(bufnr) then
                 vim.cmd.vsplit()
                 if not vim.api.nvim_buf_is_valid(bufnr) then
@@ -85,6 +93,10 @@ M.setup = function()
     vim.api.nvim_create_user_command(
         "ProjtasksTest",
         function()
+            if bufnr == nil then
+                vim.cmd("ProjtasksToggle")
+                vim.cmd("ProjtasksToggle")
+            end
             if not is_visible(bufnr) then
                 vim.cmd.vsplit()
                 if not vim.api.nvim_buf_is_valid(bufnr) then
