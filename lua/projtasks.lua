@@ -1,4 +1,5 @@
-proj_config = require('projfile')
+ok, proj_config = pcall(require('projfile'))
+if not ok then return end
 local Terminal = require('toggleterm.terminal').Terminal
 local M = {}
 
