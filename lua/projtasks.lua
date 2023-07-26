@@ -1,5 +1,3 @@
-ok, proj_config = pcall(require, 'projfile')
-if not ok then return end
 local Terminal = require('toggleterm.terminal').Terminal
 local M = {}
 
@@ -8,6 +6,9 @@ local default_conf = {
 }
 
 M.setup = function(args)
+    ok, proj_config = pcall(require, 'projfile')
+    if not ok then return end
+
     local conf = args or default_conf
     local term = Terminal:new({
         hidden = true,
