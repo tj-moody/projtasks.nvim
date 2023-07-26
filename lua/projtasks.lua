@@ -27,6 +27,11 @@ M.setup = function(args)
                 "t", "<C-T>", "<cmd>close<CR>",
                 { noremap = true, silent = true }
             )
+            vim.api.nvim_buf_set_keymap(
+                term.bufnr,
+                "n", "<C-T>", "<cmd>close<CR>",
+                { noremap = true, silent = true }
+            )
         end,
 
         -- on_close = function(term)
