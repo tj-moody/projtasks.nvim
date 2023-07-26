@@ -2,11 +2,16 @@ proj_config = require('projfile')
 local Terminal = require('toggleterm.terminal').Terminal
 local M = {}
 
-M.setup = function(opts)
+local default_conf = {
+    direction = "float",
+}
+
+M.setup = function(args)
+    local conf = args or default_conf
     local term = Terminal:new({
         hidden = true,
         dir = "git_dir",
-        direction = "float",
+        direction = conf.direction,
 
         on_open = function(term)
             vim.cmd("startinsert!")
