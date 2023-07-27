@@ -51,14 +51,13 @@ end
 M.setup = function()
     ok, proj_config = pcall(require, 'projfile')
     if not ok then
-        print("PROJFILE NOT FOUND")
         return
     end
 
     vim.api.nvim_create_user_command(
         "ProjtasksToggle",
         function()
-            if bufnr == nil then
+            if not bufnr then
                 vim.cmd.vsplit()
                 vim.cmd("vertical resize 70")
                 bufnr = new_vert_term()
@@ -82,7 +81,7 @@ M.setup = function()
     vim.api.nvim_create_user_command(
         "ProjtasksRun",
         function()
-            if bufnr == nil then
+            if not bufnr then
                 vim.cmd("ProjtasksToggle")
                 vim.cmd("ProjtasksToggle")
             end
@@ -106,7 +105,7 @@ M.setup = function()
     vim.api.nvim_create_user_command(
         "ProjtasksTest",
         function()
-            if bufnr == nil then
+            if not bufnr then
                 vim.cmd("ProjtasksToggle")
                 vim.cmd("ProjtasksToggle")
             end
