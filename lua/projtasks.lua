@@ -51,6 +51,21 @@ end
 M.setup = function()
     ok, proj_config = pcall(require, 'projfile')
     if not ok then
+        vim.api.nvim_create_user_command(
+            "ProjtasksToggle",
+            function()
+                print("No projfile in current project")
+            end,
+            { desc = "Toggle Projtasks Terminal" }
+        )
+
+        vim.api.nvim_create_user_command(
+            "ProjtasksRun",
+            function()
+                print("No projfile in current project")
+            end,
+            { desc = "Run Project" }
+        )
         return
     end
 
