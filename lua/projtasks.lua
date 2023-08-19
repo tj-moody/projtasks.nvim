@@ -4,7 +4,7 @@ local new_vert_term = function()
     local buf = vim.api.nvim_create_buf(false, false) + 1
     vim.cmd("terminal")
     vim.cmd("setlocal nonumber norelativenumber nobuflisted")
-    vim.cmd("setlocal filetype=term")
+    vim.cmd("setlocal filetype=projterm")
     vim.api.nvim_buf_set_keymap(
         buf,
         "n", "q", "<cmd>close<CR>",
