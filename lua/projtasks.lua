@@ -31,7 +31,9 @@ local create_term = function()
         "n", "p", "",
         { noremap = true, silent = true }
     )
-    vim.cmd("bprev")
+    if #vim.fn.getbufinfo({['buflisted'] = 1}) > 1 then
+        vim.cmd("bprev")
+    end
 end
 
 local enter_code = vim.api.nvim_replace_termcodes(
@@ -140,5 +142,6 @@ end
 --       etc. by default in Rust projects.
 -- TODO: Output to file instead
 --       of terminal window?
+-- TODO: Export function to run most recent command
 
 return M
