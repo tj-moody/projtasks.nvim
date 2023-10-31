@@ -4,9 +4,34 @@ local M = {}
 local default_config = {
     terminal_direction = "vertical",
     defaults = {},
+    size = {
+        vertical = 70,
+        horizontal = 20,
+    }
 }
 
 M.config = default_config
+
+local function create_resize_autocmd()
+    vim.api.nvim_create_autocmd("WinResized", {
+        -- pattern = "term://*",
+        pattern = '*',
+        group = vim.api.nvim_create_augroup("Projtasks", {}),
+        callback = function()
+            event = vim.v.event
+            if not event.windows then return end
+            for _, win in ipairs(event.windows) do
+                if vim.api.nvim_win_get_buf(win) == M.bufnr then
+                    if M.config.terminal_direction == "vertical" then
+                        M.config.size.vertical = vim.api.nvim_win_get_width(win)
+                    else
+                        M.config.size.horizontal = vim.api.nvim_win_get_height(win)
+                    end
+                end
+            end
+        end
+    })
+end
 
 local create_term = function()
     M.bufnr = vim.api.nvim_create_buf(false, false) + 1
@@ -15,7 +40,8 @@ local create_term = function()
     vim.cmd("setlocal filetype=projterm")
 
     -- From toggleterm docs
-    local opts = { noremap = true, silent = true, buffer = 0 }
+    local opts = { noremap = true, silent = true, buffer = M.bufnr }
+    vim.keymap.set('t', '<C-t>', [[<Cmd>close<CR>]], opts)
     vim.keymap.set('t', '<C-h>', [[<Cmd>wincmd h<CR>]], opts)
     vim.keymap.set('t', '<C-j>', [[<Cmd>wincmd j<CR>]], opts)
     vim.keymap.set('t', '<C-k>', [[<Cmd>wincmd k<CR>]], opts)
@@ -52,11 +78,11 @@ local function open_term()
     if M.config.terminal_direction == "vertical" then
         vim.cmd.vsplit()
         vim.cmd("wincmd L")
-        vim.cmd("vertical resize 70")
+        vim.cmd("vertical resize " .. M.config.size.vertical)
     elseif M.config.terminal_direction == "horizontal" then
         vim.cmd.split()
         vim.cmd("wincmd J")
-        vim.cmd("horizontal resize 20")
+        vim.cmd("horizontal resize " .. M.config.size.horizontal)
     else
         print("Invalid `terminal_direction`")
     end
@@ -121,6 +147,7 @@ M.setup = function(user_config)
     M.run = create_task_runner("run", missing_projfile_fallback)
     M.build = create_task_runner("build", missing_projfile_fallback)
     M.test = create_task_runner("test", missing_projfile_fallback)
+    create_resize_autocmd()
 end
 
 M.toggle_terminal_direction = function()
@@ -139,8 +166,8 @@ end
 
 -- TODO: Add neotest integration
 -- TODO: Add godbolt integration
--- TODO: Output to file instead
---       of terminal window?
--- TODO: Add wezterm integration (run in wezterm split)
+-- TODO: Write output to file
+-- TODO: Run task in wezterm split
+-- TODO: Refactor into multiple files
 
 return M
