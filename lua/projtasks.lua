@@ -13,26 +13,16 @@ local create_term = function()
     vim.cmd("terminal")
     vim.cmd("setlocal nonumber norelativenumber nobuflisted")
     vim.cmd("setlocal filetype=projterm")
-    vim.api.nvim_buf_set_keymap(
-        M.bufnr,
-        "n", "q", "<cmd>close<CR>",
-        { noremap = true, silent = true }
-    )
-    vim.api.nvim_buf_set_keymap(
-        M.bufnr,
-        "t", "<C-T>", "<cmd>close<CR>",
-        { noremap = true, silent = true }
-    )
-    vim.api.nvim_buf_set_keymap(
-        M.bufnr,
-        "n", "<C-T>", "<cmd>close<CR>",
-        { noremap = true, silent = true }
-    )
-    vim.api.nvim_buf_set_keymap(
-        M.bufnr,
-        "n", "p", "",
-        { noremap = true, silent = true }
-    )
+
+    -- From toggleterm docs
+    local opts = { noremap = true, silent = true, buffer = 0 }
+    vim.keymap.set('t', '<C-h>', [[<Cmd>wincmd h<CR>]], opts)
+    vim.keymap.set('t', '<C-j>', [[<Cmd>wincmd j<CR>]], opts)
+    vim.keymap.set('t', '<C-k>', [[<Cmd>wincmd k<CR>]], opts)
+    vim.keymap.set('t', '<C-l>', [[<Cmd>wincmd l<CR>]], opts)
+    vim.keymap.set('t', '<esc>', [[<C-\><C-n>]], opts)
+    vim.keymap.set('t', '<C-w>', [[<C-\><C-n><C-w>]], opts)
+
     if #vim.fn.getbufinfo({ buflisted = 1 }) > 1 then
         vim.cmd("bprev")
     end
@@ -106,12 +96,10 @@ local function create_task_runner(task_key, fallback)
     end
 
     local tasks = M.config.defaults[vim.bo.filetype]
-    if M.has_projfile then
-        tasks = M.proj_config["tasks"]
-    end
+    if M.has_projfile then tasks = M.proj_config["tasks"] end
 
     if not tasks[task_key] then
-        return function() print("Task " .. task_key .. " not found.") end
+        return function() print("Task `" .. task_key .. "` not found.") end
     end
     return function()
         focus_term()
@@ -151,11 +139,8 @@ end
 
 -- TODO: Add neotest integration
 -- TODO: Add godbolt integration
--- TODO: Add defaults based on project type and
---       structure, ie `cargo run`, `cargo test`,
---       etc. by default in Rust projects.
 -- TODO: Output to file instead
 --       of terminal window?
--- TODO: Export function to run most recent command
+-- TODO: Add wezterm integration (run in wezterm split)
 
 return M
