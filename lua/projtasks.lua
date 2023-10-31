@@ -1,7 +1,9 @@
 local M = {}
 
+---@type ProjtasksConfig
 local default_config = {
-    terminal_direction = "vertical"
+    terminal_direction = "vertical",
+    defaults = {},
 }
 
 M.config = default_config
@@ -31,7 +33,7 @@ local create_term = function()
         "n", "p", "",
         { noremap = true, silent = true }
     )
-    if #vim.fn.getbufinfo({['buflisted'] = 1}) > 1 then
+    if #vim.fn.getbufinfo({ buflisted = 1 }) > 1 then
         vim.cmd("bprev")
     end
 end
@@ -55,6 +57,7 @@ local is_visible = function()
     return false
 end
 
+
 local function open_term()
     if M.config.terminal_direction == "vertical" then
         vim.cmd.vsplit()
@@ -73,52 +76,63 @@ local function open_term()
     vim.cmd.b(M.bufnr)
     vim.cmd("startinsert!")
 end
+
 local function close_term()
     vim.cmd("close " .. vim.fn.bufwinnr(M.bufnr))
 end
-M.toggle_term = function()
+
+M.toggle = function()
     if is_visible() then
         close_term()
     else
         open_term()
     end
 end
+
 local function focus_term()
     if is_visible() then
         close_term()
     end
     open_term()
 end
-local function create_command(name, task_key, desc)
-    vim.api.nvim_create_user_command(name,
-        function()
-            focus_term()
-            vim.api.nvim_feedkeys(proj_config["tasks"][task_key] .. enter_code, 't', true)
-        end,
-        { desc = desc }
-    )
+
+---@param task_key "run" | "build" | "test"
+---@param fallback function
+---@return function
+local function create_task_runner(task_key, fallback)
+    if not task_key then return fallback end
+    if not M.has_projfile and not M.config.defaults[vim.bo.filetype] then
+        return fallback
+    end
+
+    local tasks = M.config.defaults[vim.bo.filetype]
+    if M.has_projfile then
+        tasks = M.proj_config["tasks"]
+    end
+
+    if not tasks[task_key] then
+        return function() print("Task " .. task_key .. " not found.") end
+    end
+    return function()
+        focus_term()
+        vim.api.nvim_feedkeys(tasks[task_key] .. enter_code, 't', true)
+        M.last_task_key = task_key
+    end
 end
 
+M.recent = create_task_runner(M.last_task_key, M.toggle)
+
+---@param user_config ProjtasksConfig
 M.setup = function(user_config)
     M.config = vim.tbl_deep_extend("force", default_config, user_config)
-    ok, proj_config = pcall(require, 'projfile')
-    vim.api.nvim_create_user_command(
-        "ProjtasksToggle",
-        function()
-            M.toggle_term()
-        end,
-        { desc = "Toggle Projtasks Terminal" }
-    )
-    if not ok then
-        vim.api.nvim_create_user_command("ProjtasksRun",
-            function() print("No projfile in current project") end, { desc = "Run Project" })
-        vim.api.nvim_create_user_command("ProjtasksTest",
-            function() print("No projfile in current project") end, { desc = "Test Project" })
-    else
-        create_command("ProjtasksRun", "run", "Run  Project")
-        create_command("ProjtasksTest", "test", "Test Project")
-        create_command("ProjtasksBuild", "build", "Run  Project")
+    M.has_projfile, M.proj_config = pcall(require, 'projfile')
+
+    local missing_projfile_fallback = function()
+        print("No projfile in current project")
     end
+    M.run = create_task_runner("run", missing_projfile_fallback)
+    M.build = create_task_runner("build", missing_projfile_fallback)
+    M.test = create_task_runner("test", missing_projfile_fallback)
 end
 
 M.toggle_terminal_direction = function()
@@ -130,7 +144,7 @@ M.toggle_terminal_direction = function()
         print("Invalid `terminal_direction`")
     end
     if is_visible() then
-        M.toggle_term()
+        M.toggle()
         open_term()
     end
 end
