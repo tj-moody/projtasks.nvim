@@ -10,114 +10,20 @@ local default_config = {
     }
 }
 
-M.config = default_config
-
-local function create_resize_autocmd()
-    vim.api.nvim_create_autocmd("WinResized", {
-        -- pattern = "term://*",
-        pattern = '*',
-        group = vim.api.nvim_create_augroup("Projtasks", {}),
-        callback = function()
-            event = vim.v.event
-            if not event.windows then return end
-            for _, win in ipairs(event.windows) do
-                if vim.api.nvim_win_get_buf(win) == M.bufnr then
-                    if M.config.terminal_direction == "vertical" then
-                        M.config.size.vertical = vim.api.nvim_win_get_width(win)
-                    else
-                        M.config.size.horizontal = vim.api.nvim_win_get_height(win)
-                    end
-                end
-            end
-        end
-    })
-end
-
-local create_term = function()
-    M.bufnr = vim.api.nvim_create_buf(false, false) + 1
-    vim.cmd("terminal")
-    vim.cmd("setlocal nonumber norelativenumber nobuflisted")
-    vim.cmd("setlocal filetype=projterm")
-
-    -- From toggleterm docs
-    local opts = { noremap = true, silent = true, buffer = M.bufnr }
-    vim.keymap.set('t', '<C-t>', [[<Cmd>close<CR>]], opts)
-    vim.keymap.set('t', '<C-h>', [[<Cmd>wincmd h<CR>]], opts)
-    vim.keymap.set('t', '<C-j>', [[<Cmd>wincmd j<CR>]], opts)
-    vim.keymap.set('t', '<C-k>', [[<Cmd>wincmd k<CR>]], opts)
-    vim.keymap.set('t', '<C-l>', [[<Cmd>wincmd l<CR>]], opts)
-    vim.keymap.set('t', '<esc>', [[<C-\><C-n>]], opts)
-    vim.keymap.set('t', '<C-w>', [[<C-\><C-n><C-w>]], opts)
-
-    if #vim.fn.getbufinfo({ buflisted = 1 }) > 1 then
-        vim.cmd("bprev")
-    end
-end
 
 local enter_code = vim.api.nvim_replace_termcodes(
     "<CR>",
     false, false, true
 )
 
-
-local is_visible = function()
-    for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        local winbufnr = vim.api.nvim_win_get_buf(winid)
-        local winvalid = vim.api.nvim_win_is_valid(winid)
-
-        if winvalid and winbufnr == M.bufnr then
-            return true
-        end
-    end
-
-    return false
-end
-
-
-local function open_term()
-    if M.config.terminal_direction == "vertical" then
-        vim.cmd.vsplit()
-        vim.cmd("wincmd L")
-        vim.cmd("vertical resize " .. M.config.size.vertical)
-    elseif M.config.terminal_direction == "horizontal" then
-        vim.cmd.split()
-        vim.cmd("wincmd J")
-        vim.cmd("horizontal resize " .. M.config.size.horizontal)
-    else
-        print("Invalid `terminal_direction`")
-    end
-    if not M.bufnr or not vim.api.nvim_buf_is_valid(M.bufnr) then
-        create_term()
-    end
-    vim.cmd.b(M.bufnr)
-    vim.cmd("startinsert!")
-end
-
-local function close_term()
-    vim.cmd("close " .. vim.fn.bufwinnr(M.bufnr))
-end
-
-M.toggle = function()
-    if is_visible() then
-        close_term()
-    else
-        open_term()
-    end
-end
-
-local function focus_term()
-    if is_visible() then
-        close_term()
-    end
-    open_term()
-end
+M.terminal = require('projtasks.terminal')
 
 ---@param task_key "run" | "build" | "test"
 ---@param fallback function
 ---@return function
-local function create_task_runner(task_key, fallback)
+local function create_terminal_runner(task_key, fallback)
     if not task_key then return fallback end
-    if not M.has_projfile and not M.config.defaults[vim.bo.filetype] then
+    if not M.has_projfile and not M.terminal.config.defaults[vim.bo.filetype] then
         return fallback
     end
 
@@ -128,46 +34,35 @@ local function create_task_runner(task_key, fallback)
         return function() print("Task `" .. task_key .. "` not found.") end
     end
     return function()
-        focus_term()
+        M.terminal:focus_term(M.config)
         vim.api.nvim_feedkeys(tasks[task_key] .. enter_code, 't', true)
         M.last_task_key = task_key
     end
 end
 
-M.recent = create_task_runner(M.last_task_key, M.toggle)
+M.toggle = function()
+    M.terminal:toggle(M.config)
+end
+
+M.term_recent = create_terminal_runner(M.last_task_key, M.toggle)
+
+M.toggle_terminal_direction = function()
+    M.terminal:toggle_terminal_direction(M.config)
+end
+
 
 ---@param user_config ProjtasksConfig
 M.setup = function(user_config)
     M.config = vim.tbl_deep_extend("force", default_config, user_config)
     M.has_projfile, M.proj_config = pcall(require, 'projfile')
 
-    local missing_projfile_fallback = function()
-        print("No projfile in current project")
-    end
-    M.run = create_task_runner("run", missing_projfile_fallback)
-    M.build = create_task_runner("build", missing_projfile_fallback)
-    M.test = create_task_runner("test", missing_projfile_fallback)
-    create_resize_autocmd()
-end
+     local missing_projfile_fallback = function()
+         print("No projfile in current project")
+     end
+     M.term_run = create_terminal_runner("run", missing_projfile_fallback)
+     M.term_build = create_terminal_runner("build", missing_projfile_fallback)
+     M.term_test = create_terminal_runner("test", missing_projfile_fallback)
 
-M.toggle_terminal_direction = function()
-    if M.config.terminal_direction == "horizontal" then
-        M.config.terminal_direction = "vertical"
-    elseif M.config.terminal_direction == "vertical" then
-        M.config.terminal_direction = "horizontal"
-    else
-        print("Invalid `terminal_direction`")
-    end
-    if is_visible() then
-        M.toggle()
-        open_term()
-    end
 end
-
--- TODO: Add neotest integration
--- TODO: Add godbolt integration
--- TODO: Write output to file
--- TODO: Run task in wezterm split
--- TODO: Refactor into multiple files
 
 return M
