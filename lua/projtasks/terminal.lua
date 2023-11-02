@@ -3,7 +3,6 @@ local Terminal = {}
 
 function Terminal:create_resize_autocmd()
     vim.api.nvim_create_autocmd("WinResized", {
-        -- pattern = "term://*",
         pattern = '*',
         group = vim.api.nvim_create_augroup("Projtasks", {}),
         callback = function()
@@ -22,9 +21,15 @@ function Terminal:create_resize_autocmd()
     })
 end
 
----@param config? ProjtasksConfig
-function Terminal:init(config)
-    if not config then config = self.config end
+---@param projtasks_config? ProjtasksConfig
+function Terminal:init(projtasks_config)
+    local config = {}
+    if not projtasks_config then
+        config = self.config
+    else
+        config = projtasks_config.terminal_config
+        self.config = config
+    end
 
     local bufnr = vim.api.nvim_create_buf(false, false) + 1
     vim.cmd("terminal")
@@ -45,7 +50,6 @@ function Terminal:init(config)
         vim.cmd("bprev")
     end
 
-    self.config = config
     self.bufnr = bufnr
 end
 
@@ -63,9 +67,9 @@ function Terminal:is_visible()
     return false
 end
 
----@param config ProjtasksConfig
-function Terminal:open_term(config)
-    if not self.config then self.config = config end
+---@param projtasks_config ProjtasksConfig
+function Terminal:open_term(projtasks_config)
+    if not self.config then self.config = projtasks_config.terminal_config end
     if self.config.terminal_direction == "vertical" then
         vim.cmd.vsplit()
         vim.cmd("wincmd L")
@@ -78,7 +82,7 @@ function Terminal:open_term(config)
         print("Invalid `terminal_direction`")
     end
     if not self.bufnr or not vim.api.nvim_buf_is_valid(self.bufnr) then
-        self:init(config)
+        self:init(projtasks_config)
         self:create_resize_autocmd()
     end
     vim.cmd.b(self.bufnr)
@@ -86,7 +90,6 @@ function Terminal:open_term(config)
 end
 
 function Terminal:close_term()
-    -- P(self.bufnr, vim.fn.bufwinnr(self.bufnr))
     vim.cmd("close " .. vim.fn.bufwinnr(self.bufnr))
 end
 
@@ -98,17 +101,17 @@ function Terminal:focus_term(config)
     self:open_term(config)
 end
 
----@param config ProjtasksConfig
-function Terminal:toggle(config)
+---@param projtasks_config ProjtasksConfig
+function Terminal:toggle(projtasks_config)
     if self:is_visible() then
         self:close_term()
     else
-        self:open_term(config)
+        self:open_term(projtasks_config)
     end
 end
 
----@param config ProjtasksConfig
-function Terminal:toggle_terminal_direction(config)
+---@param projtasks_config ProjtasksConfig
+function Terminal:toggle_terminal_direction(projtasks_config)
     if self.config.terminal_direction == "horizontal" then
         self.config.terminal_direction = "vertical"
     elseif self.config.terminal_direction == "vertical" then
@@ -117,10 +120,16 @@ function Terminal:toggle_terminal_direction(config)
         print("Invalid `terminal_direction`")
     end
     if self:is_visible() then
-        self:toggle(config)
-        self:open_term(config)
+        self:toggle(projtasks_config)
+        self:open_term(projtasks_config)
 
     end
 end
+
+function Terminal:exec_task(projtasks_config, task_cmd)
+    self:focus_term(projtasks_config)
+    vim.api.nvim_feedkeys(task_cmd, 't', true)
+end
+
 
 return Terminal

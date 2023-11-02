@@ -1,29 +1,33 @@
 local M = {}
 
----@type ProjtasksConfig
-local default_config = {
-    terminal_direction = "vertical",
-    defaults = {},
-    size = {
-        vertical = 70,
-        horizontal = 20,
-    }
-}
-
-
 local enter_code = vim.api.nvim_replace_termcodes(
     "<CR>",
     false, false, true
 )
 
+---@type ProjtasksConfig
+local default_config = {
+    defaults = {},
+    output = "terminal",
+    terminal_config = {
+        terminal_direction = "vertical",
+        size = {
+            vertical = 70,
+            horizontal = 20,
+        }
+    }
+}
+
+
 M.terminal = require('projtasks.terminal')
+M.wezterm = require('projtasks.wezterm')
 
 ---@param task_key "run" | "build" | "test"
 ---@param fallback function
 ---@return function
 local function create_terminal_runner(task_key, fallback)
     if not task_key then return fallback end
-    if not M.has_projfile and not M.terminal.config.defaults[vim.bo.filetype] then
+    if not M.has_projfile and not M.config.defaults[vim.bo.filetype] then
         return fallback
     end
 
@@ -34,9 +38,19 @@ local function create_terminal_runner(task_key, fallback)
         return function() print("Task `" .. task_key .. "` not found.") end
     end
     return function()
-        M.terminal:focus_term(M.config)
-        vim.api.nvim_feedkeys(tasks[task_key] .. enter_code, 't', true)
         M.last_task_key = task_key
+        local task_cmd = tasks[task_key] .. enter_code
+
+
+        if M.config.output == "terminal" then
+            M.terminal:exec_task(M.config, task_cmd)
+        elseif M.config.output == "wezterm" then
+            -- FIX: wezterm.nvim `split_pane` API broken, see
+            -- comment in wezterm.lua
+
+            -- M.wezterm:exec_task(M.config, task_cmd)
+            M.terminal:exec_task(M.config, task_cmd)
+        end
     end
 end
 
