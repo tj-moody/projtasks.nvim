@@ -1,6 +1,11 @@
 ---@class ProjtasksTerminal
 local Terminal = {}
 
+local enter_code = vim.api.nvim_replace_termcodes(
+    "<CR>",
+    false, false, true
+)
+
 function Terminal:create_resize_autocmd()
     vim.api.nvim_create_autocmd("WinResized", {
         pattern = '*',
@@ -122,13 +127,12 @@ function Terminal:toggle_terminal_direction(projtasks_config)
     if self:is_visible() then
         self:toggle(projtasks_config)
         self:open_term(projtasks_config)
-
     end
 end
 
 function Terminal:exec_task(projtasks_config, task_cmd)
     self:focus_term(projtasks_config)
-    vim.api.nvim_feedkeys(task_cmd, 't', true)
+    vim.api.nvim_feedkeys(task_cmd .. enter_code, 't', true)
 end
 
 

@@ -1,10 +1,5 @@
 local M = {}
 
-local enter_code = vim.api.nvim_replace_termcodes(
-    "<CR>",
-    false, false, true
-)
-
 ---@type ProjtasksConfig
 local default_config = {
     defaults = {},
@@ -21,6 +16,7 @@ local default_config = {
 
 M.terminal = require('projtasks.terminal')
 M.wezterm = require('projtasks.wezterm')
+M.file = require('projtasks.file')
 
 ---@param task_key "run" | "build" | "test"
 ---@param fallback function
@@ -39,17 +35,18 @@ local function create_terminal_runner(task_key, fallback)
     end
     return function()
         M.last_task_key = task_key
-        local task_cmd = tasks[task_key] .. enter_code
-
+        local task_cmd = tasks[task_key]
 
         if M.config.output == "terminal" then
             M.terminal:exec_task(M.config, task_cmd)
         elseif M.config.output == "wezterm" then
-            -- FIX: wezterm.nvim `split_pane` API broken, see
-            -- comment in wezterm.lua
+            -- FIX: wezterm.nvim `split_pane` API broken,
+            --      see comment in wezterm.lua
 
             -- M.wezterm:exec_task(M.config, task_cmd)
             M.terminal:exec_task(M.config, task_cmd)
+        elseif M.config.output == "file" then
+            M.file:exec_task(M.config, task_cmd)
         end
     end
 end
@@ -64,19 +61,31 @@ M.toggle_terminal_direction = function()
     M.terminal:toggle_terminal_direction(M.config)
 end
 
-
 ---@param user_config ProjtasksConfig
 M.setup = function(user_config)
     M.config = vim.tbl_deep_extend("force", default_config, user_config)
     M.has_projfile, M.proj_config = pcall(require, 'projfile')
 
-     local missing_projfile_fallback = function()
-         print("No projfile in current project")
-     end
-     M.term_run = create_terminal_runner("run", missing_projfile_fallback)
-     M.term_build = create_terminal_runner("build", missing_projfile_fallback)
-     M.term_test = create_terminal_runner("test", missing_projfile_fallback)
+    local missing_projfile_fallback = function()
+        print("No projfile in current project")
+    end
+    M.term_run = create_terminal_runner("run", missing_projfile_fallback)
+    M.term_build = create_terminal_runner("build", missing_projfile_fallback)
+    M.term_test = create_terminal_runner("test", missing_projfile_fallback)
+    M.file:create_resize_autocmd()
+end
 
+M.change_output = function()
+    vim.ui.select({ 'terminal', 'wezterm', 'file' }, {
+        prompt = 'Choose output method:',
+    },
+        function(choice)
+            if choice == 'wezterm' then
+                print('Wezterm not yet supported.')
+                return
+            end
+            M.config.output = choice
+        end)
 end
 
 return M
