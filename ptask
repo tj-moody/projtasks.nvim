@@ -1,0 +1,48 @@
+#!/path/to/lua/installation/lua
+-- Be sure to change the above
+
+local ok, projfile = pcall(require, 'projfile')
+if not ok then
+    print("No projfile found in current project.")
+    return
+end
+
+local version = projfile.version
+if arg[1] == nil then
+    print("Tasks:\n---------------------------------")
+    for k, v in pairs(projfile.tasks) do
+        if version == "0.1.0" then
+            print(k, v)
+        else
+            local task_str = ""
+            for _, str in ipairs(v) do
+                task_str = task_str .. " -> " .. str
+            end
+            print(k, "| " .. task_str:sub(4, -1))
+        end
+    end
+    return
+end
+
+
+
+local task = arg[1]
+if version == "0.1.0" then
+    print("Consider reformatting to version 0.1.1")
+    os.execute(projfile.tasks[task])
+    return
+end
+
+local SYMBOL_COLOR = "\x1b[1;44m\x1b[38;5;16m"
+local RESET = "\x1b[0m"
+local BOLD = "\x1b[22;97m"
+
+local MESSAGE = BOLD .. "Executing task" .. " `" .. task .. "`"
+local SYMBOL = SYMBOL_COLOR .. " * " .. RESET .. " "
+
+print(MESSAGE)
+for _, command in ipairs(projfile.tasks[task]) do
+    print(SYMBOL .. command)
+    os.execute(command)
+    print()
+end
