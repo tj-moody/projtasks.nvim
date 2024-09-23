@@ -31,7 +31,11 @@ function File:create_resize_autocmd()
     })
 end
 
-function File:exec_task(projtasks_config, task_cmd)
+function File:exec_task(projtasks_config, task_cmd, version)
+    if version == "0.1.1" then
+        print("File output not yet supported for this version.")
+        return
+    end
     self.config = projtasks_config.terminal_config
     jobs_list = split(task_cmd, ';')
     for i, job in ipairs(jobs_list) do

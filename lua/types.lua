@@ -1,4 +1,4 @@
----@alias projtasks { [string]: { build: string, run: string, test: string} }
+---@alias projtasks { [string]: { build: string, run: string, test: string, measure: string} }
 
 ---@class TerminalConfig
 ---@field terminal_direction? "vertical" | "horizontal"

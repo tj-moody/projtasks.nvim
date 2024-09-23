@@ -50,6 +50,7 @@ function Terminal:init(projtasks_config)
     vim.keymap.set('t', '<C-l>', [[<Cmd>wincmd l<CR>]], opts)
     vim.keymap.set('t', '<esc>', [[<C-\><C-n>]], opts)
     vim.keymap.set('t', '<C-w>', [[<C-\><C-n><C-w>]], opts)
+    vim.keymap.set('n', '<CR>',  [[i<CR>]], opts)
 
     if #vim.fn.getbufinfo({ buflisted = 1 }) > 1 then
         vim.cmd("bprev")
@@ -130,9 +131,18 @@ function Terminal:toggle_terminal_direction(projtasks_config)
     end
 end
 
-function Terminal:exec_task(projtasks_config, task_cmd)
+---@param projtasks_config ProjtasksConfig
+---@param task_cmds string[] | string
+---@param version string
+function Terminal:exec_task(projtasks_config, task_cmds, version)
     self:focus_term(projtasks_config)
-    vim.api.nvim_feedkeys(task_cmd .. enter_code, 't', true)
+    if version == "0.1.0" then
+        vim.api.nvim_feedkeys(task_cmds .. enter_code, 't', true)
+    elseif version == "0.1.1" then
+        for _, cmd in ipairs(task_cmds) do ---@diagnostic disable-line
+            vim.api.nvim_feedkeys(cmd .. enter_code, 't', true)
+        end
+    end
 end
 
 
