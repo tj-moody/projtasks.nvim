@@ -1,18 +1,19 @@
 ---@class ProjtasksTerminal
 local Terminal = {}
 
-local enter_code = vim.api.nvim_replace_termcodes(
-    "<CR>",
-    false, false, true
-)
+local enter_code = vim.api.nvim_replace_termcodes("<CR>", false, false, true)
+local clear_line = vim.api.nvim_replace_termcodes("<C-u>", true, false, true)
 
+-- Persist terminal size after closing
 function Terminal:create_resize_autocmd()
     vim.api.nvim_create_autocmd("WinResized", {
-        pattern = '*',
+        pattern = "*",
         group = vim.api.nvim_create_augroup("Projtasks", {}),
         callback = function()
-            event = vim.v.event
-            if not event.windows then return end
+            local event = vim.v.event
+            if not event.windows then
+                return
+            end
             for _, win in ipairs(event.windows) do
                 if vim.api.nvim_win_get_buf(win) == self.bufnr then
                     if self.config.terminal_direction == "vertical" then
@@ -22,7 +23,7 @@ function Terminal:create_resize_autocmd()
                     end
                 end
             end
-        end
+        end,
     })
 end
 
@@ -43,14 +44,14 @@ function Terminal:init(projtasks_config)
 
     -- From toggleterm docs
     local opts = { noremap = true, silent = true, buffer = bufnr }
-    vim.keymap.set('t', '<C-t>', [[<Cmd>close<CR>]], opts)
-    vim.keymap.set('t', '<C-h>', [[<Cmd>wincmd h<CR>]], opts)
-    vim.keymap.set('t', '<C-j>', [[<Cmd>wincmd j<CR>]], opts)
-    vim.keymap.set('t', '<C-k>', [[<Cmd>wincmd k<CR>]], opts)
-    vim.keymap.set('t', '<C-l>', [[<Cmd>wincmd l<CR>]], opts)
-    vim.keymap.set('t', '<esc>', [[<C-\><C-n>]], opts)
-    vim.keymap.set('t', '<C-w>', [[<C-\><C-n><C-w>]], opts)
-    vim.keymap.set('n', '<CR>',  [[i<CR>]], opts)
+    vim.keymap.set("t", "<C-t>", [[<Cmd>close<CR>]], opts)
+    vim.keymap.set("t", "<C-h>", [[<Cmd>wincmd h<CR>]], opts)
+    vim.keymap.set("t", "<C-j>", [[<Cmd>wincmd j<CR>]], opts)
+    vim.keymap.set("t", "<C-k>", [[<Cmd>wincmd k<CR>]], opts)
+    vim.keymap.set("t", "<C-l>", [[<Cmd>wincmd l<CR>]], opts)
+    vim.keymap.set("t", "<esc>", [[<C-\><C-n>]], opts)
+    vim.keymap.set("t", "<C-w>", [[<C-\><C-n><C-w>]], opts)
+    vim.keymap.set("n", "<CR>", [[i<CR>]], opts)
 
     if #vim.fn.getbufinfo({ buflisted = 1 }) > 1 then
         vim.cmd("bprev")
@@ -75,7 +76,9 @@ end
 
 ---@param projtasks_config ProjtasksConfig
 function Terminal:open_term(projtasks_config)
-    if not self.config then self.config = projtasks_config.terminal_config end
+    if not self.config then
+        self.config = projtasks_config.terminal_config
+    end
     if self.config.terminal_direction == "vertical" then
         vim.cmd.vsplit()
         vim.cmd("wincmd L")
@@ -132,18 +135,25 @@ function Terminal:toggle_terminal_direction(projtasks_config)
 end
 
 ---@param projtasks_config ProjtasksConfig
----@param task_cmds string[] | string
+---@param task_cmds (string | string[])[]
 ---@param version string
 function Terminal:exec_task(projtasks_config, task_cmds, version)
     self:focus_term(projtasks_config)
     if version == "0.1.0" then
-        vim.api.nvim_feedkeys(task_cmds .. enter_code, 't', true)
+        vim.api.nvim_feedkeys(clear_line .. task_cmds .. enter_code, "t", true)
     elseif version == "0.1.1" then
-        for _, cmd in ipairs(task_cmds) do ---@diagnostic disable-line
-            vim.api.nvim_feedkeys(cmd .. enter_code, 't', true)
+        for _, cmd in ipairs(task_cmds) do
+            if type(cmd) == "table" then
+                -- one nested level — run each subcommand
+                for _, subcmd in ipairs(cmd) do
+                    vim.api.nvim_feedkeys(clear_line .. subcmd .. enter_code, "t", true)
+                end
+            else
+                -- normal single command
+                vim.api.nvim_feedkeys(clear_line .. cmd .. enter_code, "t", true)
+            end
         end
     end
 end
-
 
 return Terminal

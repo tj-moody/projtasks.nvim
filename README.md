@@ -19,7 +19,6 @@ Commands:
 ```lua
 local default_config = {
     defaults = {}, -- Specify per-filetype default tasks
-    output = "terminal", -- No other outputs currently supported
     terminal_config = {
         terminal_direction = "vertical",
         size = {

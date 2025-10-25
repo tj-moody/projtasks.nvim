@@ -1,4 +1,4 @@
----@alias projtasks { [string]: { build: string, run: string, test: string, measure: string} }
+---@alias projtasks { [string]: { cmd: string } }
 
 ---@class TerminalConfig
 ---@field terminal_direction? "vertical" | "horizontal"
@@ -7,7 +7,6 @@
 ---@class ProjtasksConfig
 ---@field defaults? projtasks
 ---@field terminal_config TerminalConfig
----@field output? "terminal" | "file" | "wezterm"
 
 ---@class ProjtasksTerminal
 ---@field bufnr integer
