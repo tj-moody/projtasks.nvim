@@ -121,6 +121,7 @@ end
 
 ---@param projtasks_config ProjtasksConfig
 function Terminal:toggle_terminal_direction(projtasks_config)
+    if not self.config then return end
     if self.config.terminal_direction == "horizontal" then
         self.config.terminal_direction = "vertical"
     elseif self.config.terminal_direction == "vertical" then
@@ -143,15 +144,7 @@ function Terminal:exec_task(projtasks_config, task_cmds, version)
         vim.api.nvim_feedkeys(clear_line .. task_cmds .. enter_code, "t", true)
     elseif version == "0.1.1" then
         for _, cmd in ipairs(task_cmds) do
-            if type(cmd) == "table" then
-                -- one nested level — run each subcommand
-                for _, subcmd in ipairs(cmd) do
-                    vim.api.nvim_feedkeys(clear_line .. subcmd .. enter_code, "t", true)
-                end
-            else
-                -- normal single command
-                vim.api.nvim_feedkeys(clear_line .. cmd .. enter_code, "t", true)
-            end
+            vim.api.nvim_feedkeys(clear_line .. cmd .. enter_code, "t", true)
         end
     end
 end

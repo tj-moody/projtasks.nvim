@@ -18,9 +18,6 @@ M.toggle = function()
     M.terminal:toggle(M.config)
 end
 
--- Currently does not work: needs to update last task every time a task is run
--- M.term_recent = create_terminal_runner(M.last_task_key, M.toggle)
-
 M.toggle_terminal_direction = function()
     M.terminal:toggle_terminal_direction(M.config)
 end
@@ -31,9 +28,17 @@ M.setup = function(user_config)
     M.has_projfile, M.proj_config = pcall(require, "projfile")
 end
 
-M.create_ptask_runner = function(task_key)
+M.live_runner = function(task_key)
     return function()
         M.terminal:exec_task(M.config, "ptask " .. task_key, "0.1.0")
+    end
+end
+
+M.static_runner = function(task_key)
+    return function()
+        vim.cmd.vsplit()
+        vim.cmd.terminal("ptask " .. task_key)
+        vim.cmd("setlocal nobuflisted")
     end
 end
 
