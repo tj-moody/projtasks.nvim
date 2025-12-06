@@ -20,7 +20,14 @@ Commands:
 local default_config = {
     defaults = {}, -- Specify per-filetype default tasks
     terminal_config = {
-        terminal_direction = "vertical",
+        direction = "horizontal",
+        size = {
+            vertical = 70,
+            horizontal = 20,
+        }
+    }
+    static_config = {
+        direction = "vertical",
         size = {
             vertical = 70,
             horizontal = 20,
@@ -36,7 +43,17 @@ return {
     ["tasks"] = {
         ["run"] = { [[cargo run --release]] },
         ["build"] = { [[cargo build --release]] },
-        ["test"] = { [[cargo nextest run]] },
+        ["test"] = {
+            -- Commands don't have to be flattened
+            {
+                [[./test_a > test/out/a.out]]
+                [[diff test/out/a.out test/out/a.out.correct]]
+            },
+            {
+                [[./test_b > test/out/b.out]]
+                [[diff test/out/b.out test/out/b.out.correct]]
+            },
+        },
         ["bench"] = { [[cargo bench]] },
         ["profile"] = {
             [[cargo build --release]],

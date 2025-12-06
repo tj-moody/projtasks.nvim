@@ -1,14 +1,11 @@
 ---@class ProjtasksTerminal
 local Terminal = {}
 
-local enter_code = vim.api.nvim_replace_termcodes("<CR>", false, false, true)
-local clear_line = vim.api.nvim_replace_termcodes("<C-u>", true, false, true)
-
 -- Persist terminal size after closing
 function Terminal:create_resize_autocmd()
     vim.api.nvim_create_autocmd("WinResized", {
         pattern = "*",
-        group = vim.api.nvim_create_augroup("Projtasks", {}),
+        group = vim.api.nvim_create_augroup("ProjTerm", { clear = true }),
         callback = function()
             local event = vim.v.event
             if not event.windows then
@@ -16,7 +13,7 @@ function Terminal:create_resize_autocmd()
             end
             for _, win in ipairs(event.windows) do
                 if vim.api.nvim_win_get_buf(win) == self.bufnr then
-                    if self.config.terminal_direction == "vertical" then
+                    if self.config.direction == "vertical" then
                         self.config.size.vertical = vim.api.nvim_win_get_width(win)
                     else
                         self.config.size.horizontal = vim.api.nvim_win_get_height(win)
@@ -27,18 +24,23 @@ function Terminal:create_resize_autocmd()
     })
 end
 
----@param projtasks_config? ProjtasksConfig
-function Terminal:init(projtasks_config)
-    local config = {}
-    if not projtasks_config then
-        config = self.config
-    else
-        config = projtasks_config.terminal_config
-        self.config = config
+function Terminal:initialized()
+    if self.config then
+        return true
     end
+    return false
+end
 
-    local bufnr = vim.api.nvim_create_buf(false, false) + 1
+function Terminal:buf_valid()
+    return self.bufnr and vim.api.nvim_buf_is_valid(self.bufnr)
+end
+
+function Terminal:init()
+    open_window(self.config)
+
     vim.cmd("terminal")
+    print("OPENING")
+    local bufnr = vim.api.nvim_get_current_buf()
     vim.cmd("setlocal nonumber norelativenumber nobuflisted")
     vim.cmd("setlocal filetype=projterm")
 
@@ -53,15 +55,16 @@ function Terminal:init(projtasks_config)
     vim.keymap.set("t", "<C-w>", [[<C-\><C-n><C-w>]], opts)
     vim.keymap.set("n", "<CR>", [[i<CR>]], opts)
 
-    if #vim.fn.getbufinfo({ buflisted = 1 }) > 1 then
-        vim.cmd("bprev")
-    end
-
     self.bufnr = bufnr
+    self.channel = vim.bo[bufnr].channel
+    self:create_resize_autocmd()
 end
 
 ---@return boolean
 function Terminal:is_visible()
+    if not self:buf_valid() or not self:initialized() then
+        return false
+    end
     for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
         local winbufnr = vim.api.nvim_win_get_buf(winid)
         local winvalid = vim.api.nvim_win_is_valid(winid)
@@ -74,27 +77,27 @@ function Terminal:is_visible()
     return false
 end
 
----@param projtasks_config ProjtasksConfig
-function Terminal:open_term(projtasks_config)
-    if not self.config then
-        self.config = projtasks_config.terminal_config
-    end
-    if self.config.terminal_direction == "vertical" then
+function open_window(config)
+    if config.direction == "vertical" then
         vim.cmd.vsplit()
         vim.cmd("wincmd L")
-        vim.cmd("vertical resize " .. self.config.size.vertical)
-    elseif self.config.terminal_direction == "horizontal" then
+        vim.cmd("vertical resize " .. config.size.vertical)
+    elseif config.direction == "horizontal" then
         vim.cmd.split()
         vim.cmd("wincmd J")
-        vim.cmd("horizontal resize " .. self.config.size.horizontal)
+        vim.cmd("horizontal resize " .. config.size.horizontal)
     else
         print("Invalid `terminal_direction`")
     end
-    if not self.bufnr or not vim.api.nvim_buf_is_valid(self.bufnr) then
-        self:init(projtasks_config)
-        self:create_resize_autocmd()
+end
+
+function Terminal:open_term()
+    if not self:buf_valid() then
+        self:init()
+    else
+        open_window(self.config)
+        vim.cmd.b(self.bufnr)
     end
-    vim.cmd.b(self.bufnr)
     vim.cmd("startinsert!")
 end
 
@@ -102,51 +105,40 @@ function Terminal:close_term()
     vim.cmd("close " .. vim.fn.bufwinnr(self.bufnr))
 end
 
----@param config ProjtasksConfig
-function Terminal:focus_term(config)
+function Terminal:focus_term()
     if self:is_visible() then
         self:close_term()
     end
-    self:open_term(config)
+    self:open_term()
 end
 
----@param projtasks_config ProjtasksConfig
-function Terminal:toggle(projtasks_config)
+function Terminal:toggle()
     if self:is_visible() then
         self:close_term()
     else
-        self:open_term(projtasks_config)
+        self:open_term()
     end
 end
 
----@param projtasks_config ProjtasksConfig
-function Terminal:toggle_terminal_direction(projtasks_config)
-    if not self.config then return end
-    if self.config.terminal_direction == "horizontal" then
-        self.config.terminal_direction = "vertical"
-    elseif self.config.terminal_direction == "vertical" then
-        self.config.terminal_direction = "horizontal"
+function Terminal:toggle_direction()
+    if self.config.direction == "horizontal" then
+        self.config.direction = "vertical"
+    elseif self.config.direction == "vertical" then
+        self.config.direction = "horizontal"
     else
         print("Invalid `terminal_direction`")
     end
     if self:is_visible() then
-        self:toggle(projtasks_config)
-        self:open_term(projtasks_config)
+        self:close_term()
+        self:open_term()
     end
 end
 
----@param projtasks_config ProjtasksConfig
----@param task_cmds (string | string[])[]
----@param version string
-function Terminal:exec_task(projtasks_config, task_cmds, version)
-    self:focus_term(projtasks_config)
-    if version == "0.1.0" then
-        vim.api.nvim_feedkeys(clear_line .. task_cmds .. enter_code, "t", true)
-    elseif version == "0.1.1" then
-        for _, cmd in ipairs(task_cmds) do
-            vim.api.nvim_feedkeys(clear_line .. cmd .. enter_code, "t", true)
-        end
-    end
+---@param task_cmd string
+function Terminal:exec_task(task_cmd)
+    self:focus_term()
+    ---@diagnostic disable-next-line: param-type-mismatch
+    vim.api.nvim_chan_send(self.channel, task_cmd .. "\r")
 end
 
 return Terminal
