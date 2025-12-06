@@ -35,10 +35,53 @@ M.live_runner = function(task_key)
 end
 
 M.static_runner = function(task_key)
+    if not M.has_projfile and not M.config.defaults[vim.bo.filetype] then
+        return function()
+            vim.print("No projfile found in current project.")
+        end
+    end
+    local tasks = M.has_projfile and M.proj_config["tasks"] or M.config.defaults[vim.bo.filetype]
+
+    if not tasks[task_key] then
+        return function()
+            print("Task `" .. task_key .. "` not found.")
+        end
+    end
+    local task = tasks[task_key]
+
+    -- Static terminal output
+    if not task.use_qflist or task.use_qflist == false then
+        return function()
+            vim.cmd.vsplit()
+            vim.cmd.terminal("ptask " .. task_key)
+            vim.cmd("setlocal nobuflisted")
+        end
+    end
+
+    -- qflist output
     return function()
-        vim.cmd.vsplit()
-        vim.cmd.terminal("ptask " .. task_key)
-        vim.cmd("setlocal nobuflisted")
+        local tmpfile = vim.fn.tempname()
+        local efm = vim.o.errorformat
+
+        vim.fn.jobstart(("ptask %s > %s 2>&1"):format(task_key, tmpfile), {
+            on_exit = function(_, _)
+                vim.schedule(function()
+                    local lines = vim.fn.readfile(tmpfile)
+
+                    vim.fn.delete(tmpfile)
+
+                    vim.fn.setqflist({}, "r", {
+                        title = "ptask " .. task_key,
+                        lines = lines,
+                        efm = efm,
+                    })
+
+                    if #vim.fn.getqflist() > 0 then
+                        vim.cmd("copen")
+                    end
+                end)
+            end,
+        })
     end
 end
 
